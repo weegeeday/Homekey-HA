@@ -76,7 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     driver = AccessoryDriver(
         port=port,
         address="",
-        state_file=state_file,
+        persist_file=state_file,
         loop=hass.loop,
     )
 
