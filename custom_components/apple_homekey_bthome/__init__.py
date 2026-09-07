@@ -8,7 +8,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import persistent_notification
+from homeassistant.components import persistent_notification
 from pyhap.accessory_driver import AccessoryDriver
 
 from .const import (
