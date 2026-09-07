@@ -3,8 +3,18 @@
 from __future__ import annotations
 
 import logging
+import os
+import shutil
 import urllib.parse
 from typing import Any
+
+# Purge any stale __pycache__ on load to force python recompilation
+try:
+    _pycache = os.path.join(os.path.dirname(__file__), "__pycache__")
+    if os.path.exists(_pycache):
+        shutil.rmtree(_pycache, ignore_errors=True)
+except Exception:
+    pass
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant

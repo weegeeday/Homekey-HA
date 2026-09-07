@@ -2,10 +2,20 @@
 
 from __future__ import annotations
 
+import os
 import random
+import shutil
 import socket
 import string
 from typing import Any
+
+# Purge any stale __pycache__ on load to force python recompilation
+try:
+    _pycache = os.path.join(os.path.dirname(__file__), "__pycache__")
+    if os.path.exists(_pycache):
+        shutil.rmtree(_pycache, ignore_errors=True)
+except Exception:
+    pass
 
 import voluptuous as vol
 from homeassistant import config_entries
