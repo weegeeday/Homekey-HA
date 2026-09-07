@@ -156,7 +156,7 @@ class HomeKeyLockAccessory(Accessory):
         hass: HomeAssistant | None = None,
     ) -> None:
         """Initialize virtual HomeKit lock accessory."""
-        super().__init__(driver, name, aid=aid)
+        super().__init__(driver, name, category=CATEGORY_DOOR_LOCK, aid=aid)
         self.store = store
         self.hass = hass
         self.finish_color = finish_color
@@ -174,8 +174,9 @@ class HomeKeyLockAccessory(Accessory):
         finish_char.set_value(finish_bytes)
         info_service.add_characteristic(finish_char)
 
-        # Lock Mechanism Service
+        # Lock Mechanism Service (Primary Service for Door Lock)
         self.serv_lock_mech = self.add_preload_service("LockMechanism")
+        self.serv_lock_mech.is_primary = True
         self.char_lock_current = self.serv_lock_mech.get_characteristic("LockCurrentState")
         self.char_lock_target = self.serv_lock_mech.get_characteristic("LockTargetState")
         
@@ -187,6 +188,8 @@ class HomeKeyLockAccessory(Accessory):
         # Lock Management Service
         self.serv_lock_mgmt = self.add_preload_service("LockManagement")
         self.serv_lock_mgmt.get_characteristic("Version").set_value("2.0")
+        if self.serv_lock_mgmt.has_characteristic("LockControlPoint"):
+            self.serv_lock_mgmt.get_characteristic("LockControlPoint").setter_callback = lambda val: None
 
         # NFC Access Service
         self.serv_nfc = NFCAccessService()
