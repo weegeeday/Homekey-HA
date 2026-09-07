@@ -7,9 +7,13 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from pyhap.accessory import Accessory
-from pyhap.characteristic import Characteristic
+from pyhap.characteristic import HAP_FORMAT_DEFAULTS, Characteristic
 from pyhap.const import CATEGORY_DOOR_LOCK
 from pyhap.service import Service
+
+# Ensure PyHAP HAP_FORMAT_DEFAULTS contains 'tlv8' format default
+if "tlv8" not in HAP_FORMAT_DEFAULTS:
+    HAP_FORMAT_DEFAULTS["tlv8"] = ""
 
 from .const import (
     CHAR_CONFIGURATION_STATE,
