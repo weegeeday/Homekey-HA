@@ -40,7 +40,9 @@ class ConfigurationStateChar(Characteristic):
             "ConfigurationState",
             CHAR_CONFIGURATION_STATE,
             {
+                "format": "uint16",
                 "Format": "uint16",
+                "perms": ["pr", "ev"],
                 "Permissions": ["pr", "ev"],
                 "minValue": 0,
                 "maxValue": 65535,
@@ -48,6 +50,10 @@ class ConfigurationStateChar(Characteristic):
             },
             service,
         )
+
+    def _get_default_value(self) -> int:
+        """Return default configuration state integer."""
+        return 1
 
 
 class NFCAccessControlPointChar(Characteristic):
@@ -59,11 +65,17 @@ class NFCAccessControlPointChar(Characteristic):
             "NFCAccessControlPoint",
             CHAR_NFC_ACCESS_CONTROL_POINT,
             {
+                "format": "tlv8",
                 "Format": "tlv8",
+                "perms": ["pr", "pw", "ev"],
                 "Permissions": ["pr", "pw", "ev"],
             },
             service,
         )
+
+    def _get_default_value(self) -> bytes:
+        """Return default empty TLV bytes."""
+        return b""
 
 
 class NFCAccessSupportedConfigChar(Characteristic):
@@ -75,11 +87,17 @@ class NFCAccessSupportedConfigChar(Characteristic):
             "NFCAccessSupportedConfiguration",
             CHAR_NFC_ACCESS_SUPPORTED_CONFIG,
             {
+                "format": "tlv8",
                 "Format": "tlv8",
+                "perms": ["pr"],
                 "Permissions": ["pr"],
             },
             service,
         )
+
+    def _get_default_value(self) -> bytes:
+        """Return static supported configuration payload."""
+        return DEFAULT_SUPPORTED_CONFIG
 
 
 class HardwareFinishChar(Characteristic):
@@ -91,11 +109,17 @@ class HardwareFinishChar(Characteristic):
             "HardwareFinish",
             CHAR_HARDWARE_FINISH,
             {
+                "format": "tlv8",
                 "Format": "tlv8",
+                "perms": ["pr"],
                 "Permissions": ["pr"],
             },
             service,
         )
+
+    def _get_default_value(self) -> bytes:
+        """Return default hardware finish payload."""
+        return HARDWARE_FINISHES["black"]
 
 
 class NFCAccessService(Service):
