@@ -187,8 +187,10 @@ class HomeKeyLockAccessory(Accessory):
         # Lock Management Service
         self.serv_lock_mgmt = self.add_preload_service("LockManagement")
         self.serv_lock_mgmt.get_characteristic("Version").set_value("2.0")
-        if self.serv_lock_mgmt.has_characteristic("LockControlPoint"):
+        try:
             self.serv_lock_mgmt.get_characteristic("LockControlPoint").setter_callback = lambda val: None
+        except Exception:
+            pass
 
         # NFC Access Service
         self.serv_nfc = NFCAccessService()
