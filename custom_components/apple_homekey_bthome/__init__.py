@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.components.persistent_notification import async_create as create_persistent_notification
+from homeassistant.helpers import config_validation as cv
 from pyhap.accessory_driver import AccessoryDriver
 
 from .const import (
@@ -30,6 +31,8 @@ from .storage import HomeKeyStore
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["lock"]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 def generate_mac(entry_id: str) -> str:
