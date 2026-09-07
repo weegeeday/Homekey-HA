@@ -156,7 +156,7 @@ class HomeKeyLockAccessory(Accessory):
         hass: HomeAssistant | None = None,
     ) -> None:
         """Initialize virtual HomeKit lock accessory."""
-        super().__init__(driver, name, category=CATEGORY_DOOR_LOCK, aid=aid)
+        super().__init__(driver, name, aid=aid)
         self.store = store
         self.hass = hass
         self.finish_color = finish_color
