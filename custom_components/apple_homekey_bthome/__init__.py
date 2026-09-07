@@ -32,6 +32,12 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["lock"]
 
 
+def generate_mac(entry_id: str) -> str:
+    """Generate a unique MAC address from entry_id for HomeKit driver."""
+    digest = hashlib.md5(entry_id.encode("utf-8")).hexdigest()
+    return f"06:{digest[0:2]}:{digest[2:4]}:{digest[4:6]}:{digest[6:8]}:{digest[8:10]}"
+
+
 def get_setup_payload(setup_code: str, setup_id: str) -> str:
     """Generate official HomeKit setup payload URI (X-HM://...)."""
     try:
@@ -70,15 +76,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.http.register_view(view)
         hass.data[DOMAIN]["http_view_registered"] = True
 
-    # Configure PyHAP Driver
+    # Retrieve Zeroconf instance from Home Assistant
+    zeroconf_instance = None
+    try:
+        from homeassistant.components.zeroconf import async_get_instance
+        zeroconf_instance = await async_get_instance(hass)
+    except Exception as err:
+        _LOGGER.debug("Could not get HA zeroconf instance: %s", err)
+
+    mac_address = generate_mac(entry_id)
     state_file = hass.config.path(f".apple_homekey_{entry_id}.state")
-    
-    driver = AccessoryDriver(
-        port=port,
-        persist_file=state_file,
-        pincode=setup_code.encode("ascii"),
-        loop=hass.loop,
-    )
+
+    # Configure PyHAP Driver with HA Zeroconf & Unique MAC
+    driver_kwargs: dict[str, Any] = {
+        "port": port,
+        "persist_file": state_file,
+        "pincode": setup_code.encode("ascii"),
+        "loop": hass.loop,
+        "mac": mac_address,
+    }
+    if zeroconf_instance is not None:
+        driver_kwargs["zeroconf_instance"] = zeroconf_instance
+
+    driver = AccessoryDriver(**driver_kwargs)
 
     if hasattr(driver.state, "setup_id"):
         driver.state.setup_id = setup_id

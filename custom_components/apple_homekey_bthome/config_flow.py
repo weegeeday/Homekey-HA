@@ -112,20 +112,26 @@ class HomeKeyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class HomeKeyOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for configuration updates."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry | None = None) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
+        if config_entry is not None:
+            self.config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
+        finish_color = self.config_entry.options.get(
+            CONF_FINISH_COLOR,
+            self.config_entry.data.get(CONF_FINISH_COLOR, DEFAULT_FINISH_COLOR),
+        )
+
         data_schema = vol.Schema(
             {
                 vol.Required(
                     CONF_FINISH_COLOR,
-                    default=self.config_entry.data.get(CONF_FINISH_COLOR, DEFAULT_FINISH_COLOR),
+                    default=finish_color,
                 ): vol.In(list(HARDWARE_FINISHES.keys())),
             }
         )
