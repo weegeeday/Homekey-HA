@@ -75,13 +75,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     driver = AccessoryDriver(
         port=port,
-        address="",
         persist_file=state_file,
+        pincode=setup_code.encode("ascii"),
         loop=hass.loop,
     )
 
-    # Set driver setup credentials
-    driver.state.setup_code = setup_code.encode("ascii")
     if hasattr(driver.state, "setup_id"):
         driver.state.setup_id = setup_id
 
