@@ -4,8 +4,22 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
+import shutil
+import sys
 import urllib.parse
 from typing import Any
+
+# Disable Python bytecode (.pyc) writing for this integration
+sys.dont_write_bytecode = True
+
+# Auto-purge any stale __pycache__ folder in this component directory on startup
+_pycache_path = os.path.join(os.path.dirname(__file__), "__pycache__")
+if os.path.exists(_pycache_path):
+    try:
+        shutil.rmtree(_pycache_path, ignore_errors=True)
+    except Exception:
+        pass
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
