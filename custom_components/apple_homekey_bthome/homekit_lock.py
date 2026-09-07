@@ -132,9 +132,13 @@ class NFCAccessService(Service):
     def __init__(self) -> None:
         """Initialize NFCAccess service."""
         super().__init__(SERVICE_NFC_ACCESS, "NFCAccess")
-        self.add_characteristic(ConfigurationStateChar)
-        self.add_characteristic(NFCAccessControlPointChar)
-        self.add_characteristic(NFCAccessSupportedConfigChar)
+        self.char_config_state = ConfigurationStateChar(self)
+        self.char_nfc_control_point = NFCAccessControlPointChar(self)
+        self.char_nfc_supported = NFCAccessSupportedConfigChar(self)
+
+        self.add_characteristic(self.char_config_state)
+        self.add_characteristic(self.char_nfc_control_point)
+        self.add_characteristic(self.char_nfc_supported)
 
 
 class HomeKeyLockAccessory(Accessory):
@@ -188,9 +192,9 @@ class HomeKeyLockAccessory(Accessory):
         self.serv_nfc = NFCAccessService()
         self.add_service(self.serv_nfc)
 
-        self.char_config_state = self.serv_nfc.get_characteristic("ConfigurationState")
-        self.char_nfc_control_point = self.serv_nfc.get_characteristic("NFCAccessControlPoint")
-        self.char_nfc_supported = self.serv_nfc.get_characteristic("NFCAccessSupportedConfiguration")
+        self.char_config_state = self.serv_nfc.char_config_state
+        self.char_nfc_control_point = self.serv_nfc.char_nfc_control_point
+        self.char_nfc_supported = self.serv_nfc.char_nfc_supported
 
         # Set static values and initial configuration state
         self.char_nfc_supported.set_value(DEFAULT_SUPPORTED_CONFIG)
