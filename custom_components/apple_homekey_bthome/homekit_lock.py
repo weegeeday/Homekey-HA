@@ -40,8 +40,8 @@ class ConfigurationStateChar(Characteristic):
             "ConfigurationState",
             CHAR_CONFIGURATION_STATE,
             {
-                "format": "uint16",
-                "perms": ["pr", "ev"],
+                "Format": "uint16",
+                "Permissions": ["pr", "ev"],
                 "minValue": 0,
                 "maxValue": 65535,
                 "stepValue": 1,
@@ -59,8 +59,8 @@ class NFCAccessControlPointChar(Characteristic):
             "NFCAccessControlPoint",
             CHAR_NFC_ACCESS_CONTROL_POINT,
             {
-                "format": "tlv8",
-                "perms": ["pr", "pw", "ev"],
+                "Format": "tlv8",
+                "Permissions": ["pr", "pw", "ev"],
             },
             service,
         )
@@ -75,8 +75,8 @@ class NFCAccessSupportedConfigChar(Characteristic):
             "NFCAccessSupportedConfiguration",
             CHAR_NFC_ACCESS_SUPPORTED_CONFIG,
             {
-                "format": "tlv8",
-                "perms": ["pr"],
+                "Format": "tlv8",
+                "Permissions": ["pr"],
             },
             service,
         )
@@ -91,8 +91,8 @@ class HardwareFinishChar(Characteristic):
             "HardwareFinish",
             CHAR_HARDWARE_FINISH,
             {
-                "format": "tlv8",
-                "perms": ["pr"],
+                "Format": "tlv8",
+                "Permissions": ["pr"],
             },
             service,
         )
