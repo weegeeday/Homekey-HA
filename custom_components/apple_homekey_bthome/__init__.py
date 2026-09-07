@@ -101,7 +101,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "mac": mac_address,
     }
     if zeroconf_instance is not None:
-        driver_kwargs["zeroconf_instance"] = zeroconf_instance
+        driver_kwargs["async_zeroconf_instance"] = zeroconf_instance
 
     driver = AccessoryDriver(**driver_kwargs)
 
