@@ -53,11 +53,10 @@ def find_available_port(start_port: int = DEFAULT_START_PORT) -> int:
     return start_port
 
 
-class HomeKeyConfigFlow(config_entries.ConfigFlow):
+class HomeKeyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Apple HomeKey Token Extractor."""
 
     VERSION = 1
-    DOMAIN = DOMAIN
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial setup step."""

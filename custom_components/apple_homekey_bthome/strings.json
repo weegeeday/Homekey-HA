@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Virtual HomeKey Lock",
+        "description": "Set up your virtual HomeKit lock accessory. Randomized setup credentials have been generated below.\n\nGenerated PIN: {generated_pin}\nGenerated ID: {generated_id}\nPort: {generated_port}",
+        "data": {
+          "name": "Accessory Name",
+          "setup_code": "HomeKit Setup PIN Code (XXX-YY-ZZZ)",
+          "setup_id": "HomeKit Setup ID (4 characters)",
+          "port": "HAP Server Port",
+          "finish_color": "Key Card Color Finish in Apple Wallet"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect or bind port.",
+      "unknown": "Unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "Device is already configured on this port."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update HomeKey Options",
+        "data": {
+          "finish_color": "Key Card Color Finish in Apple Wallet"
+        }
+      }
+    }
+  }
+}
