@@ -8,7 +8,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.components import persistent_notification
+from homeassistant.components.persistent_notification import async_create as create_persistent_notification
 from pyhap.accessory_driver import AccessoryDriver
 
 from .const import (
@@ -127,7 +127,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         f"3. Complete the lock setup wizard. Apple will automatically provision HomeKey credentials to this lock.\n"
         f"4. Once paired, download `homekeyc.h` at: `http://<YOUR_HA_IP>:8123{URL_DOWNLOAD_HOMEKEYC}`\n"
     )
-    persistent_notification.async_create(
+    create_persistent_notification(
         hass,
         notification_msg,
         title="Apple HomeKey Lock Setup",
