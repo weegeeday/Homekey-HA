@@ -38,6 +38,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 def generate_mac(entry_id: str) -> str:
     """Generate a unique MAC address from entry_id for HomeKit driver."""
+    import hashlib
     digest = hashlib.md5(entry_id.encode("utf-8")).hexdigest()
     return f"06:{digest[0:2]}:{digest[2:4]}:{digest[4:6]}:{digest[6:8]}:{digest[8:10]}"
 
