@@ -176,7 +176,6 @@ class HomeKeyLockAccessory(Accessory):
 
         # Lock Mechanism Service (Primary Service for Door Lock)
         self.serv_lock_mech = self.add_preload_service("LockMechanism")
-        self.serv_lock_mech.primary = True
         self.char_lock_current = self.serv_lock_mech.get_characteristic("LockCurrentState")
         self.char_lock_target = self.serv_lock_mech.get_characteristic("LockTargetState")
         

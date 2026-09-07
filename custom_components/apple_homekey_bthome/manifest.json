@@ -15,5 +15,5 @@
     "HAP-python>=4.8.0",
     "cryptography>=3.0"
   ],
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
