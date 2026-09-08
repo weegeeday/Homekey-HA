@@ -2,6 +2,9 @@
   "domain": "apple_homekey_bthome",
   "name": "Apple HomeKey Token Extractor",
   "after_dependencies": [
+    "http",
+    "network",
+    "persistent_notification",
     "zeroconf"
   ],
   "codeowners": [
@@ -15,5 +18,5 @@
     "HAP-python>=4.8.0",
     "cryptography>=3.0"
   ],
-  "version": "1.0.13"
+  "version": "1.0.14"
 }
