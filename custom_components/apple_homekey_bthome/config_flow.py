@@ -46,10 +46,11 @@ def find_available_port(start_port: int = DEFAULT_START_PORT) -> int:
     port = start_port
     while port < start_port + 100:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            res = sock.connect_ex(("127.0.0.1", port))
-            if res != 0:
+            try:
+                sock.bind(("0.0.0.0", port))
                 return port
-        port += 1
+            except OSError:
+                port += 1
     return start_port
 
 
@@ -106,25 +107,27 @@ class HomeKeyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         config_entry: config_entries.ConfigEntry,
     ) -> config_entries.OptionsFlow:
         """Create options flow handler."""
-        return HomeKeyOptionsFlowHandler(config_entry)
+        return HomeKeyOptionsFlowHandler()
 
 
 class HomeKeyOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for configuration updates."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry | None = None) -> None:
-        """Initialize options flow."""
-        if config_entry is not None:
-            self.config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        finish_color = self.config_entry.options.get(
+        config_entry = getattr(self, "config_entry", None)
+        if config_entry is None and hasattr(self, "handler"):
+            config_entry = self.hass.config_entries.async_get_entry(self.handler)
+
+        options = config_entry.options if config_entry else {}
+        entry_data = config_entry.data if config_entry else {}
+
+        finish_color = options.get(
             CONF_FINISH_COLOR,
-            self.config_entry.data.get(CONF_FINISH_COLOR, DEFAULT_FINISH_COLOR),
+            entry_data.get(CONF_FINISH_COLOR, DEFAULT_FINISH_COLOR),
         )
 
         data_schema = vol.Schema(
@@ -136,4 +139,24 @@ class HomeKeyOptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
 
-        return self.async_show_form(step_id="init", data_schema=data_schema)
+        try:
+            from homeassistant.helpers.network import get_url
+            base_url = get_url(self.hass, prefer_external=False)
+        except Exception:
+            base_url = ""
+        
+        from .const import URL_DOWNLOAD_HOMEKEYC
+        download_url = f"{base_url}{URL_DOWNLOAD_HOMEKEYC}"
+
+        data = self.hass.data.get(DOMAIN, {}).get(config_entry.entry_id, {}) if config_entry else {}
+        store = data.get("store")
+        status_text = "Ready to download (Provisioned)" if (store and store.is_provisioned) else "Waiting for Apple Home app pairing"
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=data_schema,
+            description_placeholders={
+                "download_url": download_url,
+                "status": status_text,
+            },
+        )

@@ -57,6 +57,11 @@ class HomeKeyStore:
         
         self.configuration_state: int = 1
 
+    @property
+    def is_provisioned(self) -> bool:
+        """Return True if Reader Private Key (SK.R) has been provisioned."""
+        return self.sk_r is not None
+
     async def async_load(self) -> None:
         """Load data from persistent storage."""
         data = await self._store.async_load()
@@ -105,6 +110,15 @@ class HomeKeyStore:
         self.gid = derive_gid(sk_r)
         self.configuration_state += 1
         _LOGGER.info("Provisioned new Reader Private Key! GID=%s", self.gid.hex())
+
+    def ensure_reader_key(self) -> None:
+        """Ensure a Reader Private Key (SK.R) exists, generating a new SECP256R1 key if unprovisioned."""
+        if self.sk_r is None:
+            import os
+            sk_r = os.urandom(32)
+            sub_id = os.urandom(8)
+            self.set_reader_key(sk_r, sub_id)
+            _LOGGER.info("Auto-generated initial Reader Private Key (SK.R). GID=%s", self.gid.hex())
 
     def remove_reader_key(self) -> None:
         """Remove provisioned Reader Private Key."""

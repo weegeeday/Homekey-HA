@@ -5,15 +5,15 @@
     "zeroconf"
   ],
   "codeowners": [
-    "@simon"
+    "@weegeeday"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/simon/Homekey-HA",
+  "documentation": "https://github.com/weegeeday/Homekey-HA",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/simon/Homekey-HA/issues",
+  "issue_tracker": "https://github.com/weegeeday/Homekey-HA/issues",
   "requirements": [
     "HAP-python>=4.8.0",
     "cryptography>=3.0"
   ],
-  "version": "1.0.2"
+  "version": "1.0.13"
 }

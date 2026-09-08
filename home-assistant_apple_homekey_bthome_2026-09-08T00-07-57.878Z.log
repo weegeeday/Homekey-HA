@@ -1,0 +1,152 @@
+s6-rc: info: service s6rc-oneshot-runner: starting
+s6-rc: info: service s6rc-oneshot-runner successfully started
+s6-rc: info: service fix-attrs: starting
+s6-rc: info: service fix-attrs successfully started
+s6-rc: info: service legacy-cont-init: starting
+s6-rc: info: service legacy-cont-init successfully started
+s6-rc: info: service legacy-services: starting
+services-up: info: copying legacy longrun home-assistant (no readiness notification)
+s6-rc: info: service legacy-services successfully started
+2026-09-07 20:05:18.324 WARNING (SyncWorker_0) [homeassistant.loader] We found a custom integration apple_homekey_bthome which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+2026-09-07 20:05:18.325 WARNING (SyncWorker_0) [homeassistant.loader] We found a custom integration hacs which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+2026-09-07 20:05:19.754 WARNING (MainThread) [homeassistant.util.loop] Detected blocking call to open with args ('/usr/local/lib/python3.14/site-packages/pyhap/resources/characteristics.json', 'r') inside the event loop by custom integration 'apple_homekey_bthome' at custom_components/apple_homekey_bthome/__init__.py, line 169: driver = AccessoryDriver(**driver_kwargs) (offender: /usr/local/lib/python3.14/site-packages/pyhap/loader.py, line 38: with open(path, "r", encoding="utf8") as file:), please create a bug report at https://github.com/weegeeday/Homekey-HA/issues
+For developers, please see https://developers.home-assistant.io/docs/asyncio_blocking_operations/#open
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/usr/src/homeassistant/homeassistant/__main__.py", line 227, in <module>
+    sys.exit(main())
+  File "/usr/src/homeassistant/homeassistant/__main__.py", line 213, in main
+    exit_code = runner.run(runtime_conf)
+  File "/usr/src/homeassistant/homeassistant/runner.py", line 280, in run
+    return loop.run_until_complete(setup_and_run_hass(runtime_config))
+  File "/usr/local/lib/python3.14/asyncio/base_events.py", line 706, in run_until_complete
+    self.run_forever()
+  File "/usr/local/lib/python3.14/asyncio/base_events.py", line 677, in run_forever
+    self._run_once()
+  File "/usr/local/lib/python3.14/asyncio/base_events.py", line 2056, in _run_once
+    handle._run()
+  File "/usr/local/lib/python3.14/asyncio/events.py", line 94, in _run
+    self._context.run(self._callback, *self._args)
+  File "/usr/src/homeassistant/homeassistant/setup.py", line 168, in async_setup_component
+    result = await _async_setup_component(hass, domain, config)
+  File "/usr/src/homeassistant/homeassistant/setup.py", line 470, in _async_setup_component
+    await asyncio.gather(
+  File "/usr/src/homeassistant/homeassistant/setup.py", line 472, in <genexpr>
+    create_eager_task(
+  File "/usr/src/homeassistant/homeassistant/util/async_.py", line 42, in create_eager_task
+    return Task(coro, loop=loop, name=name, eager_start=True)
+  File "/usr/src/homeassistant/homeassistant/config_entries.py", line 977, in async_setup_locked
+    await self.async_setup(hass, integration=integration)
+  File "/usr/src/homeassistant/homeassistant/config_entries.py", line 708, in async_setup
+    await self.__async_setup_with_context(hass, integration)
+  File "/usr/src/homeassistant/homeassistant/config_entries.py", line 803, in __async_setup_with_context
+    result = await component.async_setup_entry(hass, self)
+  File "/config/custom_components/apple_homekey_bthome/__init__.py", line 169, in async_setup_entry
+    driver = AccessoryDriver(**driver_kwargs)
+
+2026-09-07 20:05:19.760 WARNING (MainThread) [homeassistant.util.loop] Detected blocking call to open with args ('/config/.apple_homekey_01M1Z4R0DCKCE4RXN3J7F2R48W.state', 'r') inside the event loop by custom integration 'apple_homekey_bthome' at custom_components/apple_homekey_bthome/__init__.py, line 173: driver.load() (offender: /usr/local/lib/python3.14/site-packages/pyhap/accessory_driver.py, line 676: with open(self.persist_file, "r", encoding="utf8") as file_handle:), please create a bug report at https://github.com/weegeeday/Homekey-HA/issues
+For developers, please see https://developers.home-assistant.io/docs/asyncio_blocking_operations/#open
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/usr/src/homeassistant/homeassistant/__main__.py", line 227, in <module>
+    sys.exit(main())
+  File "/usr/src/homeassistant/homeassistant/__main__.py", line 213, in main
+    exit_code = runner.run(runtime_conf)
+  File "/usr/src/homeassistant/homeassistant/runner.py", line 280, in run
+    return loop.run_until_complete(setup_and_run_hass(runtime_config))
+  File "/usr/local/lib/python3.14/asyncio/base_events.py", line 706, in run_until_complete
+    self.run_forever()
+  File "/usr/local/lib/python3.14/asyncio/base_events.py", line 677, in run_forever
+    self._run_once()
+  File "/usr/local/lib/python3.14/asyncio/base_events.py", line 2056, in _run_once
+    handle._run()
+  File "/usr/local/lib/python3.14/asyncio/events.py", line 94, in _run
+    self._context.run(self._callback, *self._args)
+  File "/usr/src/homeassistant/homeassistant/setup.py", line 168, in async_setup_component
+    result = await _async_setup_component(hass, domain, config)
+  File "/usr/src/homeassistant/homeassistant/setup.py", line 470, in _async_setup_component
+    await asyncio.gather(
+  File "/usr/src/homeassistant/homeassistant/setup.py", line 472, in <genexpr>
+    create_eager_task(
+  File "/usr/src/homeassistant/homeassistant/util/async_.py", line 42, in create_eager_task
+    return Task(coro, loop=loop, name=name, eager_start=True)
+  File "/usr/src/homeassistant/homeassistant/config_entries.py", line 977, in async_setup_locked
+    await self.async_setup(hass, integration=integration)
+  File "/usr/src/homeassistant/homeassistant/config_entries.py", line 708, in async_setup
+    await self.__async_setup_with_context(hass, integration)
+  File "/usr/src/homeassistant/homeassistant/config_entries.py", line 803, in __async_setup_with_context
+    result = await component.async_setup_entry(hass, self)
+  File "/config/custom_components/apple_homekey_bthome/__init__.py", line 173, in async_setup_entry
+    driver.load()
+
+Setup payload: X-HM://00624ESP5Z2TI
+Scan this code with your HomeKit app on your iOS device:
+
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+
+Or enter this code in your HomeKit app on your iOS device: 356-97-865
+2026-09-07 20:07:39.939 DEBUG (MainThread) [custom_components.apple_homekey_bthome.storage] No existing HomeKey store found, starting fresh
+Setup payload: X-HM://0062IUN9ZCCR5
+Scan this code with your HomeKit app on your iOS device:
+
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          
+
+Or enter this code in your HomeKit app on your iOS device: 599-51-959

@@ -128,3 +128,38 @@ def generate_homekey_header(store: HomeKeyStore) -> str:
     lines.append("#endif // HOMEKEYC_H")
     lines.append("")
     return "\n".join(lines)
+
+
+def save_homekey_header_files(hass: Any, store: HomeKeyStore) -> list[str]:
+    """Write homekeyc.h to /config/homekeyc.h and /config/www/homekeyc.h if provisioned."""
+    import os
+    import logging
+    logger = logging.getLogger(__name__)
+
+    if not store.is_provisioned:
+        return []
+
+    saved_paths: list[str] = []
+    try:
+        content = generate_homekey_header(store)
+
+        # 1. Save to main /config/homekeyc.h
+        config_path = hass.config.path("homekeyc.h")
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        saved_paths.append(config_path)
+        logger.info("Saved Apple HomeKey header file to %s", config_path)
+
+        # 2. Save to /config/www/homekeyc.h (served at /local/homekeyc.h)
+        www_dir = hass.config.path("www")
+        os.makedirs(www_dir, exist_ok=True)
+        www_path = os.path.join(www_dir, "homekeyc.h")
+        with open(www_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        saved_paths.append(www_path)
+        logger.info("Saved Apple HomeKey header file to %s (served at /local/homekeyc.h)", www_path)
+    except Exception as err:
+        logger.error("Failed to save homekeyc.h files to config directory: %s", err, exc_info=True)
+
+    return saved_paths
+

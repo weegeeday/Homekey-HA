@@ -77,9 +77,9 @@ class NFCAccessControlPointChar(Characteristic):
             service,
         )
 
-    def _get_default_value(self) -> bytes:
-        """Return default empty TLV bytes."""
-        return b""
+    def _get_default_value(self) -> str:
+        """Return default empty TLV string."""
+        return ""
 
 
 class NFCAccessSupportedConfigChar(Characteristic):
@@ -99,9 +99,9 @@ class NFCAccessSupportedConfigChar(Characteristic):
             service,
         )
 
-    def _get_default_value(self) -> bytes:
-        """Return static supported configuration payload."""
-        return DEFAULT_SUPPORTED_CONFIG
+    def _get_default_value(self) -> str:
+        """Return static supported configuration Base64 payload."""
+        return base64.b64encode(DEFAULT_SUPPORTED_CONFIG).decode("ascii")
 
 
 class HardwareFinishChar(Characteristic):
@@ -121,24 +121,29 @@ class HardwareFinishChar(Characteristic):
             service,
         )
 
-    def _get_default_value(self) -> bytes:
-        """Return default hardware finish payload."""
-        return HARDWARE_FINISHES["black"]
+    def _get_default_value(self) -> str:
+        """Return default hardware finish Base64 payload."""
+        return base64.b64encode(HARDWARE_FINISHES["black"]).decode("ascii")
 
 
 class NFCAccessService(Service):
     """NFCAccess HomeKit Service."""
 
-    def __init__(self) -> None:
+    def __init__(self, finish_color: str = "black") -> None:
         """Initialize NFCAccess service."""
         super().__init__(SERVICE_NFC_ACCESS, "NFCAccess")
         self.char_config_state = ConfigurationStateChar(self)
         self.char_nfc_control_point = NFCAccessControlPointChar(self)
         self.char_nfc_supported = NFCAccessSupportedConfigChar(self)
+        self.char_hardware_finish = HardwareFinishChar(self)
+
+        finish_bytes = HARDWARE_FINISHES.get(finish_color, HARDWARE_FINISHES["black"])
+        self.char_hardware_finish.set_value(base64.b64encode(finish_bytes).decode("ascii"))
 
         self.add_characteristic(self.char_config_state)
         self.add_characteristic(self.char_nfc_control_point)
         self.add_characteristic(self.char_nfc_supported)
+        self.add_characteristic(self.char_hardware_finish)
 
 
 class HomeKeyLockAccessory(Accessory):
@@ -161,21 +166,16 @@ class HomeKeyLockAccessory(Accessory):
         self.hass = hass
         self.finish_color = finish_color
 
-        # Set Accessory Information
+        # Set Accessory Information (Standard HomeKit Schema)
         info_service = self.get_service("AccessoryInformation")
         info_service.get_characteristic("Manufacturer").set_value(MANUFACTURER)
         info_service.get_characteristic("Model").set_value(MODEL)
         info_service.get_characteristic("SerialNumber").set_value("HK-ESP32-VIRTUAL")
         info_service.get_characteristic("FirmwareRevision").set_value("2.0.0")
 
-        # Add HardwareFinish characteristic to AccessoryInformation
-        finish_bytes = HARDWARE_FINISHES.get(finish_color, HARDWARE_FINISHES["black"])
-        finish_char = HardwareFinishChar(info_service)
-        finish_char.set_value(finish_bytes)
-        info_service.add_characteristic(finish_char)
-
         # Lock Mechanism Service (Primary Service for Door Lock)
         self.serv_lock_mech = self.add_preload_service("LockMechanism")
+        self.serv_lock_mech.is_primary_service = True
         self.char_lock_current = self.serv_lock_mech.get_characteristic("LockCurrentState")
         self.char_lock_target = self.serv_lock_mech.get_characteristic("LockTargetState")
         
@@ -188,30 +188,53 @@ class HomeKeyLockAccessory(Accessory):
         self.serv_lock_mgmt = self.add_preload_service("LockManagement")
         self.serv_lock_mgmt.get_characteristic("Version").set_value("2.0")
         try:
-            self.serv_lock_mgmt.get_characteristic("LockControlPoint").setter_callback = lambda val: None
+            lcp = self.serv_lock_mgmt.get_characteristic("LockControlPoint")
+            lcp.set_value("")
+            lcp.setter_callback = lambda val: None
         except Exception:
             pass
 
         # NFC Access Service
-        self.serv_nfc = NFCAccessService()
+        self.serv_nfc = NFCAccessService(finish_color=finish_color)
         self.add_service(self.serv_nfc)
 
         self.char_config_state = self.serv_nfc.char_config_state
         self.char_nfc_control_point = self.serv_nfc.char_nfc_control_point
         self.char_nfc_supported = self.serv_nfc.char_nfc_supported
+        self.char_hardware_finish = self.serv_nfc.char_hardware_finish
 
         # Set static values and initial configuration state
-        self.char_nfc_supported.set_value(DEFAULT_SUPPORTED_CONFIG)
+        self.char_nfc_supported.set_value(base64.b64encode(DEFAULT_SUPPORTED_CONFIG).decode("ascii"))
         self.char_config_state.set_value(self.store.configuration_state)
 
         # Set setter callback for NFCAccessControlPoint
         self.char_nfc_control_point.setter_callback = self.handle_nfc_access_control_point
+
+        # Ensure all services and characteristics have broker bound to this accessory
+        for service in self.services:
+            service.broker = self
+            for char in service.characteristics:
+                char.broker = self
+
+        # Link secondary services to primary LockMechanism service
+        try:
+            self.serv_lock_mech.add_linked_service(self.serv_lock_mgmt)
+            self.serv_lock_mech.add_linked_service(self.serv_nfc)
+        except Exception as err:
+            _LOGGER.debug("Could not link secondary services: %s", err)
+
+        self.lock_state_callback: Any = None
 
     def set_lock_target(self, value: int) -> None:
         """Handle lock target state changes from HomeKit."""
         _LOGGER.info("HomeKit lock target state set to %d", value)
         self.char_lock_current.set_value(value)
         self.char_lock_target.set_value(value)
+        if self.lock_state_callback and self.hass:
+            try:
+                self.hass.loop.call_soon_threadsafe(self.lock_state_callback, value)
+            except Exception as err:
+                _LOGGER.warning("Error invoking lock_state_callback: %s", err)
 
     def handle_nfc_access_control_point(self, value: Any) -> None:
         """Handle TLV writes to NFCAccessControlPoint from Apple Home."""
@@ -233,8 +256,8 @@ class HomeKeyLockAccessory(Accessory):
         try:
             response_tlv = self._process_nfc_tlv(raw_bytes)
             if response_tlv:
-                # Update characteristic value to response TLV and notify subscribers
-                self.char_nfc_control_point.set_value(response_tlv)
+                # Update characteristic value to response Base64 TLV string and notify subscribers
+                self.char_nfc_control_point.set_value(base64.b64encode(response_tlv).decode("ascii"))
             
             # Notify updated configuration state counter
             self.char_config_state.set_value(self.store.configuration_state)
@@ -311,3 +334,6 @@ class HomeKeyLockAccessory(Accessory):
         """Schedule persistent store saving on Home Assistant event loop."""
         if self.hass:
             self.hass.async_create_task(self.store.async_save())
+            if self.store.is_provisioned:
+                from .generator import save_homekey_header_files
+                self.hass.async_add_executor_job(save_homekey_header_files, self.hass, self.store)

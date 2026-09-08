@@ -71,6 +71,15 @@ class HomeKeyLockEntity(LockEntity):
         self._attr_unique_id = f"{entry.entry_id}_virtual_lock"
         self._attr_is_locked = True
 
+        # Register callback for bi-directional state sync from HomeKit
+        self.accessory.lock_state_callback = self._on_homekit_state_change
+
+    def _on_homekit_state_change(self, value: int) -> None:
+        """Handle state updates initiated from Apple HomeKit."""
+        _LOGGER.info("Updating Home Assistant lock entity state from HomeKit: value=%d", value)
+        self._attr_is_locked = (value == 1)
+        self.async_write_ha_state()
+
     @property
     def device_info(self) -> DeviceInfo:
         """Return device registry information."""
@@ -86,6 +95,15 @@ class HomeKeyLockEntity(LockEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return diagnostic attributes for HomeKey token status and pairing info."""
         sk_provisioned = self.store.sk_r is not None
+
+        try:
+            from homeassistant.helpers.network import get_url
+            base_url = get_url(self.hass, prefer_external=False)
+        except Exception:
+            base_url = ""
+
+        local_www_url = f"{base_url}/local/homekeyc.h" if base_url else "/local/homekeyc.h"
+        api_download_url = f"{base_url}{URL_DOWNLOAD_HOMEKEYC}" if base_url else URL_DOWNLOAD_HOMEKEYC
         
         attrs: dict[str, Any] = {
             "setup_code": self.entry.data.get(CONF_SETUP_CODE),
@@ -98,22 +116,23 @@ class HomeKeyLockEntity(LockEntity):
             "sub_id": self.store.sub_id.hex() if self.store.sub_id else None,
             "endpoint_count": len(self.store.endpoints),
             "configuration_state": self.store.configuration_state,
-            "download_url": URL_DOWNLOAD_HOMEKEYC,
+            "header_file_path": "/config/homekeyc.h",
+            "direct_download_url": local_www_url,
+            "api_download_url": api_download_url,
+            "download_instructions": f"Find homekeyc.h in your HA /config/ folder or download at {local_www_url}",
         }
         return attrs
 
     async def async_lock(self, **kwargs: Any) -> None:
         """Lock the virtual lock."""
-        _LOGGER.info("Unlocking virtual HomeKit lock")
-        self.accessory.char_lock_current.set_value(1)
-        self.accessory.char_lock_target.set_value(1)
+        _LOGGER.info("Locking virtual HomeKit lock")
+        self.accessory.set_lock_target(1)
         self._attr_is_locked = True
         self.async_write_ha_state()
 
     async def async_unlock(self, **kwargs: Any) -> None:
         """Unlock the virtual lock."""
-        _LOGGER.info("Locking virtual HomeKit lock")
-        self.accessory.char_lock_current.set_value(0)
-        self.accessory.char_lock_target.set_value(0)
+        _LOGGER.info("Unlocking virtual HomeKit lock")
+        self.accessory.set_lock_target(0)
         self._attr_is_locked = False
         self.async_write_ha_state()

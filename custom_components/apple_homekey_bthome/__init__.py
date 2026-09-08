@@ -57,15 +57,45 @@ def generate_mac(entry_id: str) -> str:
     return f"06:{digest[0:2]}:{digest[2:4]}:{digest[4:6]}:{digest[6:8]}:{digest[8:10]}"
 
 
+def format_setup_code(code: str) -> str:
+    """Ensure setup_code is in XXX-YY-ZZZ 8-digit hyphenated format."""
+    digits = "".join(c for c in code if c.isdigit())
+    if len(digits) == 8:
+        return f"{digits[0:3]}-{digits[3:5]}-{digits[5:8]}"
+    return code
+
+
 def get_setup_payload(setup_code: str, setup_id: str) -> str:
     """Generate official HomeKit setup payload URI (X-HM://...)."""
     try:
-        from pyhap.qr import QR
-        qr_obj = QR(setup_code=setup_code, setup_id=setup_id, category=CATEGORY_DOOR_LOCK)
-        return qr_obj.payload
+        clean_code = setup_code.replace("-", "")
+        code_int = int(clean_code)
+        
+        # HAP Spec Section 5.3 Payload Bit Layout:
+        # Pincode: 27 bits (bits 0..26)
+        # Flags: 4 bits (bits 27..30) -> 2 (IP)
+        # Category: 8 bits (bits 31..38) -> 6 (Door Lock)
+        # Reserved: 4 bits (bits 39..42) -> 0
+        # Version: 3 bits (bits 43..45) -> 0
+        category = CATEGORY_DOOR_LOCK  # 6
+        flags = 2  # IP accessory
+        version = 0
+        reserved = 0
+        
+        payload_num = (version << 43) | (reserved << 39) | (category << 31) | (flags << 27) | code_int
+        
+        alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        base36 = ""
+        n = payload_num
+        while n > 0:
+            n, rem = divmod(n, 36)
+            base36 = alphabet[rem] + base36
+        
+        base36 = base36.zfill(9)
+        return f"X-HM://{base36}{setup_id.upper()}"
     except Exception as err:
-        _LOGGER.debug("PyHAP QR payload generation fallback: %s", err)
-        return f"X-HM://SETUPCODE={setup_code}&SETUPID={setup_id}"
+        _LOGGER.warning("Error generating HomeKit X-HM payload: %s", err)
+        return f"X-HM://0061PS23H{setup_id.upper()}"
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
@@ -81,46 +111,85 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     name = entry.data.get(CONF_NAME, DEFAULT_NAME)
     port = entry.data.get(CONF_PORT, 51827)
-    setup_code = entry.data.get(CONF_SETUP_CODE, "111-22-333")
+    setup_code = format_setup_code(entry.data.get(CONF_SETUP_CODE, "111-22-333"))
     setup_id = entry.data.get(CONF_SETUP_ID, "HK12")
     finish_color = entry.data.get(CONF_FINISH_COLOR, DEFAULT_FINISH_COLOR)
 
-    # Initialize key store
+    pincode_bytes = setup_code.encode("ascii")
+
+    # Initialize key store and ensure initial Reader Key exists immediately
     store = HomeKeyStore(hass, entry_id)
     await store.async_load()
+    store.ensure_reader_key()
+    await store.async_save()
+
+    # Automatically save homekeyc.h to /config/homekeyc.h & /config/www/homekeyc.h
+    from .generator import save_homekey_header_files
+    await hass.async_add_executor_job(save_homekey_header_files, hass, store)
 
     # Register HTTP View (only once if not already registered)
     if "http_view_registered" not in hass.data[DOMAIN]:
-        view = HomeKeyHeaderView(store)
+        view = HomeKeyHeaderView(hass)
         hass.http.register_view(view)
         hass.data[DOMAIN]["http_view_registered"] = True
 
-    # Retrieve Zeroconf instance from Home Assistant
-    zeroconf_instance = None
+    # Retrieve official AsyncZeroconf instance from Home Assistant
+    async_zc = None
     try:
-        from homeassistant.components.zeroconf import async_get_instance
-        zeroconf_instance = await async_get_instance(hass)
+        from homeassistant.components.zeroconf import async_get_async_zeroconf
+        async_zc = async_get_async_zeroconf(hass)
     except Exception as err:
-        _LOGGER.debug("Could not get HA zeroconf instance: %s", err)
+        _LOGGER.debug("Could not get HA async zeroconf instance: %s", err)
 
     mac_address = generate_mac(entry_id)
     state_file = hass.config.path(f".apple_homekey_{entry_id}.state")
 
-    # Configure PyHAP Driver with HA Zeroconf & Unique MAC
+    # Get primary local LAN IP address from Home Assistant network component
+    local_ip = None
+    try:
+        from homeassistant.components.network import async_get_source_ip
+        local_ip = await async_get_source_ip(hass)
+    except Exception as err:
+        _LOGGER.debug("Could not get HA source IP: %s", err)
+
+    # Configure PyHAP Driver with HA Zeroconf, LAN IP & Unique MAC
     driver_kwargs: dict[str, Any] = {
         "port": port,
         "persist_file": state_file,
-        "pincode": setup_code.encode("ascii"),
+        "pincode": pincode_bytes,
         "loop": hass.loop,
         "mac": mac_address,
+        "zeroconf_server": f"homekey-{entry_id[:8]}.local.",
     }
-    if zeroconf_instance is not None:
-        driver_kwargs["async_zeroconf_instance"] = zeroconf_instance
+    if local_ip:
+        driver_kwargs["advertised_address"] = local_ip
+
+    if async_zc is not None:
+        driver_kwargs["async_zeroconf_instance"] = async_zc
 
     driver = AccessoryDriver(**driver_kwargs)
 
-    if hasattr(driver.state, "setup_id"):
+    if os.path.exists(state_file):
+        try:
+            driver.load()
+        except Exception as err:
+            _LOGGER.warning("Error loading PyHAP state file %s: %s", state_file, err)
+    else:
+        driver.state.mac = mac_address
         driver.state.setup_id = setup_id
+        driver.state.pincode = pincode_bytes
+        try:
+            driver.persist()
+        except Exception as err:
+            _LOGGER.warning("Error persisting initial PyHAP state: %s", err)
+
+    # Ensure unprovisioned lock stays discoverable for pairing (sf=1)
+    if not store.is_provisioned:
+        driver.state.paired_clients.clear()
+
+    driver.state.setup_id = setup_id
+    driver.state.pincode = pincode_bytes
+    driver.setup_srp_verifier()
 
     # Create virtual HomeKit lock accessory
     accessory = HomeKeyLockAccessory(
@@ -136,10 +205,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     setup_payload = get_setup_payload(setup_code, setup_id)
     qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={urllib.parse.quote(setup_payload)}"
 
+    def _on_driver_task_done(task: Any) -> None:
+        if not task.cancelled() and task.exception():
+            _LOGGER.error(
+                "PyHAP driver background task failed: %s",
+                task.exception(),
+                exc_info=task.exception(),
+            )
+
     # Start PyHAP driver in background task safely
     driver_task = hass.async_create_background_task(
         driver.async_start(), name=f"apple_homekey_driver_{entry_id}"
     )
+    driver_task.add_done_callback(_on_driver_task_done)
 
     hass.data[DOMAIN][entry_id] = {
         "store": store,

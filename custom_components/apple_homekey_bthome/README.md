@@ -23,7 +23,7 @@ A HACS-compliant Home Assistant custom component that creates a virtual HomeKit 
 
 1. Open **HACS** in Home Assistant.
 2. Click the three dots in the top right corner and select **Custom repositories**.
-3. Add repository URL: `https://github.com/simon/Homekey-HA` with Category **Integration**.
+3. Add repository URL: `https://github.com/weegeeday/Homekey-HA` with Category **Integration**.
 4. Search for **Apple HomeKey Token Extractor** and click **Download**.
 5. Restart Home Assistant.
 
